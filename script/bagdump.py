@@ -23,6 +23,10 @@ CENTER_CAMERA_TOPIC = "/center_camera/image_color"
 RIGHT_CAMERA_TOPIC = "/right_camera/image_color"
 CAMERA_TOPICS = [LEFT_CAMERA_TOPIC, CENTER_CAMERA_TOPIC, RIGHT_CAMERA_TOPIC]
 STEERING_TOPIC = "/vehicle/steering_report"
+GPS_FIX_TOPIC = "/vehicle/gps/fix"
+GPS_TIME_TOPIC = "/vehicle/gps/time"
+GPS_VEL_TOPIC = "/vehicle/gps/vel"
+GPS_TOPICS = [GPS_FIX_TOPIC, GPS_TIME_TOPIC, GPS_VEL_TOPIC]
 
 
 def get_outdir(base_dir, name):
@@ -63,7 +67,7 @@ def main():
 
     include_images = True
     if include_images:
-        filter_topics = [LEFT_CAMERA_TOPIC, CENTER_CAMERA_TOPIC, RIGHT_CAMERA_TOPIC, STEERING_TOPIC]
+        filter_topics = [LEFT_CAMERA_TOPIC, CENTER_CAMERA_TOPIC, RIGHT_CAMERA_TOPIC, STEERING_TOPIC, GPS_FIX_TOPIC]
     else:
         filter_topics = [STEERING_TOPIC]
 
@@ -87,6 +91,9 @@ def main():
 
         steering_cols = ["seq", "timestamp", "angle", "torque", "speed"]
         steering_dict = defaultdict(list)
+
+        gps_cols = ["seq", "timestamp", "latitude", "longitude"]
+        gps_dict = defaultdict(list)
 
         with rosbag.Bag(bagfile, "r") as bag:
             for topic, msg, t in bag.read_messages(topics=filter_topics):
@@ -118,6 +125,15 @@ def main():
                     steering_dict["torque"].append(msg.steering_wheel_torque)
                     steering_dict["speed"].append(msg.speed)
 
+                elif topic in GPS_FIX_TOPIC:
+                    if debug_print:
+                        print("gps lat %d %f" % (msg.header.stamp.to_nsec(), msg.latitude))
+
+                    gps_dict["seq"].append(msg.header.seq)
+                    gps_dict["timestamp"].append(msg.header.stamp.to_nsec())
+                    gps_dict["latitude"].append(msg.latitude)
+                    gps_dict["longitude"].append(msg.longitude)
+
         camera_csv_path = os.path.join(dataset_dir, 'camera.csv')
         camera_df = pd.DataFrame(data=camera_dict, columns=camera_cols)
         camera_df.to_csv(camera_csv_path, index=False)
@@ -125,6 +141,10 @@ def main():
         steering_csv_path = os.path.join(dataset_dir, 'steering.csv')
         steering_df = pd.DataFrame(data=steering_dict, columns=steering_cols)
         steering_df.to_csv(steering_csv_path, index=False)
+
+        gps_csv_path = os.path.join(dataset_dir, 'gps.csv')
+        gps_df = pd.DataFrame(data=gps_dict, columns=gps_cols)
+        gps_df.to_csv(gps_csv_path, index=False)
 
 if __name__ == '__main__':
     main()
