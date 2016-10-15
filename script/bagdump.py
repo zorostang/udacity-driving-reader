@@ -36,7 +36,7 @@ def get_outdir(base_dir, name):
     return outdir
 
 
-def write_image(bridge, outdir, msg, fmt='png'):
+def write_image(bridge, outdir, msg, fmt='jpg'):
     image_filename = os.path.join(outdir, str(msg.header.stamp.to_nsec()) + '.' + fmt)
     try:
         cv_image = bridge.imgmsg_to_cv2(msg, "bgr8")
